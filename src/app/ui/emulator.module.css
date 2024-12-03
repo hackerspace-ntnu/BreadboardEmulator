@@ -1,0 +1,46 @@
+.grid {
+    margin: 1em;
+}
+
+.paper {
+    margin: 5px;
+}
+
+.buttons {
+    margin: 5px;
+    border: none;
+    box-shadow: none;
+    align-content: baseline;
+    padding-top: 5px;
+}
+
+.monospaceFont {
+    font-family: Monaco, monospace;
+}
+
+.scrollMemoryContainer {
+    overflow-y: scroll;
+    height: 300px;
+    padding: 5px;
+}
+
+.code {
+    width: 100%;
+    font-family: Monaco, monospace;
+}
+
+.visualizer {
+    padding: 5px 0 5px 0;
+}
+
+.registers {
+    height: auto;
+    align-content: center;
+    padding: 10px 0 10px 5px;
+    margin: 2px;
+}
+
+.register {
+    margin-right: 5px;
+    margin-bottom: 5px;
+}
