@@ -864,15 +864,19 @@ export default function Emulator() {
                     </Tooltip>
                     {" "}
                     <Tooltip describeChild title={loaded? "Step to the next instruction." : "Start the CPU and manually step through instructions."}>
-                        <Button variant="contained" color="info" onClick={() => stepProgram()} disabled={!assemblerComplete} endIcon={<MoveDownIcon />}>
-                            Step
-                        </Button>
+                        <span>
+                            <Button variant="contained" color="info" onClick={() => stepProgram()} disabled={!assemblerComplete} endIcon={<MoveDownIcon />}>
+                                Step
+                            </Button>
+                        </span>
                     </Tooltip>
                     {" "}
                     <Tooltip describeChild title={running? "Pause the CPU." : loaded? "Start running the CPU from this point." : "Start the CPU."}>
-                        <Button sx={{width: "125px"}} variant="contained" color={running? 'warning': loaded? 'success' : 'success'} onClick={() => runProgram()} disabled={!assemblerComplete} endIcon={running? <PauseIcon /> : loaded? <PlayArrowIcon /> : <PlayArrowIcon />}>
-                            {running? 'Pause' : loaded? 'Continue' : 'Run'}
-                        </Button>
+                        <span>
+                            <Button sx={{width: "125px"}} variant="contained" color={running? 'warning': loaded? 'success' : 'success'} onClick={() => runProgram()} disabled={!assemblerComplete} endIcon={running? <PauseIcon /> : loaded? <PlayArrowIcon /> : <PlayArrowIcon />}>
+                                {running? 'Pause' : loaded? 'Continue' : 'Run'}
+                            </Button>
+                        </span>
                     </Tooltip>
                     {" "}
                     <Tooltip describeChild title={"The target speed for the CPU."}>
