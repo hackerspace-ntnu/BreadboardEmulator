@@ -50,5 +50,5 @@ export default function Canvas(props: ICanvasProps) {
         }
     }, [vram])
 
-    return <canvas ref={canvasRef} width={320} height={240} {...props}/>
+    return <canvas suppressHydrationWarning ref={canvasRef} width={320} height={240} {...props}/>
 }
