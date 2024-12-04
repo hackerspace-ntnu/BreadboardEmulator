@@ -5,7 +5,7 @@ import {
     Card,
     FormControlLabel,
     Link,
-    Paper, Slider,
+    Paper,
     Switch,
     TextField,
     Tooltip,
@@ -59,6 +59,7 @@ export default function Emulator() {
     const setRandomRam = () => {
         setLoaded(false);
         setRunning(false);
+        setAdvancedView(false);
 
         const newVram = Array<number>(32768);
 
