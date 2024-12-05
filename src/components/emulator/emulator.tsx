@@ -20,7 +20,6 @@ import FastForwardIcon from '@mui/icons-material/FastForward';
 import PauseIcon from '@mui/icons-material/Pause';
 import StopIcon from '@mui/icons-material/Stop';
 import MoveDownIcon from '@mui/icons-material/MoveDown';
-import ViewInstruction from "@/components/viewInstruction/viewInstruction";
 
 enum instruction {
     NOP,
@@ -946,7 +945,6 @@ export default function Emulator() {
             <Grid size={4}>
                 <Paper className={`${styles.paper} ${styles.visualizer}`}>
                     <Typography variant="subtitle1" sx={{marginLeft: "5px"}}>BBC state</Typography>
-                    <ViewInstruction memoryContent={"8"} />
                     <Card variant="outlined" className={styles.registers}>
                         <Typography variant="h6" sx={{marginBottom: "10px"}}>Registers</Typography>
                         <TextField className={styles.register} label="PC" sx={{width: "65pt"}} value={showHexValues? "0x" + ('000' + reg_PC.toString(16)).slice(-4) : reg_PC} color="primary" focused />
