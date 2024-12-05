@@ -21,7 +21,6 @@ import PauseIcon from '@mui/icons-material/Pause';
 import StopIcon from '@mui/icons-material/Stop';
 import MoveDownIcon from '@mui/icons-material/MoveDown';
 import ViewInstruction from "@/components/viewInstruction/viewInstruction";
-import {valueOf} from "timestamp-nano";
 
 enum instruction {
     NOP,
