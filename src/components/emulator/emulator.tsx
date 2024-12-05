@@ -20,6 +20,33 @@ import FastForwardIcon from '@mui/icons-material/FastForward';
 import PauseIcon from '@mui/icons-material/Pause';
 import StopIcon from '@mui/icons-material/Stop';
 import MoveDownIcon from '@mui/icons-material/MoveDown';
+import ViewInstruction from "@/components/viewInstruction/viewInstruction";
+import {valueOf} from "timestamp-nano";
+
+enum instruction {
+    NOP,
+    MV,
+    LI,
+    LD,
+    LDIND,
+    LDIO,
+    STIO,
+    ADD,
+    SUB,
+    NEG,
+    XOR,
+    NAND,
+    AND,
+    OR,
+    NOT,
+    J,
+    JNZ,
+    JIMM,
+    ADDI,
+    ST,
+    JZ,
+    JN
+}
 
 export default function Emulator() {
     const [reg_PC, setReg_PC] = useState(0);
@@ -121,31 +148,6 @@ export default function Emulator() {
         setRandomRam()
     }, []);
 
-    const recognisedInstructions = [
-        "nop",
-        "mv",
-        "li",
-        "ld",
-        "ldind",
-        "ldio",
-        "stio",
-        "add",
-        "sub",
-        "neg",
-        "xor",
-        "nand",
-        "and",
-        "or",
-        "not",
-        "j",
-        "jnz",
-        "jimm",
-        "addi",
-        "st",
-        "jz",
-        "jn"
-    ];
-
     const recognisedArgType = [
         [],
         ['r', 'r'],
@@ -246,8 +248,6 @@ export default function Emulator() {
             if(PC < 0)
                 PC = 65535 + PC + 1
 
-
-
             // fetch
             const currentInstruction = ('000000000000000' + (PC > 32767? videoMemory[PC - 32768] : memory[PC]).toString(2)).slice(-16);
 
@@ -260,42 +260,43 @@ export default function Emulator() {
             let didJump = false;
 
             // execute
-            switch(recognisedInstructions[opcode]) {
-                case "nop": {
+            switch(opcode) {
+                case instruction.NOP: {
                     //%PC = %PC + 1
                     break;
                 }
-                case "mv": {
+                case instruction.MV: {
                     //%dest = %srcA
                     regs[dest] = regs[srcA];
                     //setReg(dest, getReg(srcA));
                     break;
                 }
-                case "li": {
+                case instruction.LI: {
                     //%dest = $imm
                     regs[dest] = memory[++PC];
+
                     //setReg(dest, memory[PC + 1]);
                     break;
                 }
-                case "ld": {
+                case instruction.LD: {
                     //%dest = memory[$imm]
                     regs[dest] = memory[memory[++PC]];
                     //setReg(dest, memory[memory[PC + 1]]);
                     break;
                 }
-                case "ldind": {
+                case instruction.LDIND: {
                     //%dest = memory[%srcA]
                     regs[dest] = memory[regs[srcA]];
                     //setReg(dest, memory[getReg(srcA)]);
                     break;
                 }
-                case "ldio": {
+                case instruction.LDIO: {
                     //%dest = memory[%srcA + $imm]
                     regs[dest] = memory[regs[srcA] + memory[++PC]];
                     //setReg(dest, memory[getReg(srcA) + memory[PC + 1]]);
                     break;
                 }
-                case "stio": {
+                case instruction.STIO: {
                     //memory[%srcA + $imm] = %srcB
                     const val = regs[srcB];
                     const addr = regs[srcA] + memory[++PC];
@@ -307,78 +308,78 @@ export default function Emulator() {
                     }
                     break;
                 }
-                case "add": {
+                case instruction.ADD: {
                     //%dest = %srcA + %srcB
                     const result = regs[srcA] + regs[srcB];
                     regs[dest] = result > 65535 ? result - 65536 : result
                     //setReg(dest, result > 65536 ? result % 65536 : result);
                     break;
                 }
-                case "sub": {
+                case instruction.SUB: {
                     //%dest = %srcA – %srcB
                     const result = regs[srcA] - regs[srcB];
                     regs[dest] = result < 0 ? 65536 + result : result;
                     //setReg(dest, result < 0 ? 65536 - result : result);
                     break;
                 }
-                case "neg": {
+                case instruction.NEG: {
                     //%dest = ~(%srcA) + 1
                     regs[dest] = parseInt(('0000000000000000' + ((regs[srcA]? regs[srcA] : 0).toString(2))).slice(-16).split("").map((el) => el === '0' ? '1' : '0').join(""), 2) + 1;
                     //setReg(dest, parseInt(('0000000000000000' + (getReg(srcA).toString(2))).slice(-16).split("").map((el) => el === '0' ? '1' : '0').join(""), 2) + 1);
                     break;
                 }
-                case "xor": {
+                case instruction.XOR: {
                     //%dest = %srcA XOR %srcB
                     regs[dest] = regs[srcA] ^ regs[srcB];
                     //setReg(dest, getReg(srcA) ^ getReg(srcB));
                     break;
                 }
-                case "nand": {
+                case instruction.NAND: {
                     //%dest = %srcA NAND %srcB
                     console.log(regs[srcA] & regs[srcB]);
                     regs[dest] = parseInt((regs[srcA] & regs[srcB]).toString(2).split("").map((el) => el === '0' ? '1' : '0').join(""), 2);
                     //setReg(dest, parseInt(('0000000000000000' + (getReg(srcA) & getReg(srcB)).toString(2)).slice(-16).split("").map((el) => el === '0' ? '1' : '0').join(""), 2));
                     break;
                 }
-                case "and": {
+                case instruction.AND: {
                     //%dest = %srcA AND %srcB
                     regs[dest] = regs[srcA] & regs[srcB];
                     //setReg(dest, getReg(srcA) & getReg(srcB));
                     break;
                 }
-                case "or": {
+                case instruction.OR: {
                     //%dest = %srcA OR %srcB
                     regs[dest] = regs[srcA] | regs[srcB];
                     setReg(dest, getReg(srcA) | getReg(srcB));
                     break;
                 }
-                case "not": {
+                case instruction.NOT: {
                     //%dest = ~(%srcA)
                     regs[dest] = parseInt(('0000000000000000' + ((regs[srcA]? regs[srcA] : 0).toString(2))).slice(-16).split("").map((el) => el === '0' ? '1' : '0').join(""), 2);
                     //setReg(dest, parseInt(('0000000000000000' + (getReg(srcA).toString(2))).slice(-16).split("").map((el) => el === '0' ? '1' : '0').join(""), 2));
                     break;
                 }
-                case "j": {
+                case instruction.J: {
                     //%PC = %srcA
                     PC = regs[srcA];
                     didJump = true;
                     //jumpaddr = getReg(srcA);
                     break;
                 }
-                case "jnz": {
+                case instruction.JNZ: {
                     //%PC = %srcA == 0 ? %PC + 1 : $imm
                     PC = regs[srcA] == 0 ? PC + 2 : memory[++PC];
                     didJump = true;
                     //jumpaddr = getReg(srcA) == 0 ? -1 : memory[PC + 1];
                     break;
                 }
-                case "jimm": {
+                case instruction.JIMM: {
                     //%PC = $imm
                     PC = memory[++PC];
                     didJump = true;
                     break;
                 }
-                case "addi": {
+                case instruction.ADDI: {
                     //%dest = %srcA + $imm
                     const result = regs[srcA] + memory[++PC];
                     regs[dest] = result > 65535 ? result - 65536 : result;
@@ -386,7 +387,7 @@ export default function Emulator() {
                     //PC 5
                     break;
                 }
-                case "st": {
+                case instruction.ST: {
                     //memory[%imm] = %srcA
                     const val = regs[srcA];
                     const addr = memory[++PC];
@@ -398,13 +399,13 @@ export default function Emulator() {
                     }
                     break;
                 }
-                case "jz": {
+                case instruction.JZ: {
                     //%PC = %srcA != 0 ? %PC + 1 : $imm
                     PC = regs[srcA] != 0 ? PC + 2 : memory[++PC];
                     didJump = true;
                     break;
                 }
-                case "jn": {
+                case instruction.JN: {
                     //%PC = %srcA != 0 ? %PC + 1 : $imm
                     PC = regs[srcA] < 32768 ? PC + 2 : memory[++PC];
                     didJump = true;
@@ -598,108 +599,108 @@ export default function Emulator() {
                 continue;
             }
 
-            const opIndex = recognisedInstructions.findIndex((element) => element === tokens[0]);
+            const inst = instruction[tokens[0].toUpperCase() as keyof typeof instruction]
 
             // Check instruction is valid
-            if(opIndex === -1) {
+            if(inst === undefined) {
                 setAssemblerError(true);
                 setAssemblerMessage("[Line " + (line + 1) + "] Unrecognised instruction '" + tokens[0] + "'.");
                 return;
             }
 
-            switch(recognisedInstructions[opIndex]) {
-                case "nop": {
+            switch(inst) {
+                case instruction.NOP: {
                     ram[addr++] = 0 << 2;
                     break;
                 }
-                case "mv": {
+                case instruction.MV: {
                     ram[addr++] = 1 << 2;
                     break;
                 }
-                case "li": {
+                case instruction.LI: {
                     ram[addr++] = 2 << 2;
                     break;
                 }
-                case "ld": {
+                case instruction.LD: {
                     ram[addr++] = 3 << 2;
                     break;
                 }
-                case "ldind": {
+                case instruction.LDIND: {
                     ram[addr++] = 4 << 2;
                     break;
                 }
-                case "ldio": {
+                case instruction.LDIO: {
                     ram[addr++] = 5 << 2;
                     break;
                 }
-                case "stio": {
+                case instruction.STIO: {
                     ram[addr++] = 6 << 2;
                     break;
                 }
-                case "add": {
+                case instruction.ADD: {
                     ram[addr++] = 7 << 2;
                     break;
                 }
-                case "sub": {
+                case instruction.SUB: {
                     ram[addr++] = 8 << 2;
                     break;
                 }
-                case "neg": {
+                case instruction.NEG: {
                     ram[addr++] = 9 << 2;
                     break;
                 }
-                case "xor": {
+                case instruction.XOR: {
                     ram[addr++] = 10 << 2;
                     break;
                 }
-                case "nand": {
+                case instruction.NAND: {
                     ram[addr++] = 11 << 2;
                     break;
                 }
-                case "and": {
+                case instruction.AND: {
                     ram[addr++] = 12 << 2;
                     break;
                 }
-                case "or": {
+                case instruction.OR: {
                     ram[addr++] = 13 << 2;
                     break;
                 }
-                case "not": {
+                case instruction.NOT: {
                     ram[addr++] = 14 << 2;
                     break;
                 }
-                case "j": {
+                case instruction.J: {
                     ram[addr++] = 15 << 2;
                     break;
                 }
-                case "jnz": {
+                case instruction.JNZ: {
                     ram[addr++] = 16 << 2;
                     break;
                 }
-                case "jimm": {
+                case instruction.JIMM: {
                     ram[addr++] = 17 << 2;
                     break;
                 }
-                case "addi": {
+                case instruction.ADDI: {
                     ram[addr++] = 18 << 2;
                     break;
                 }
-                case "st": {
+                case instruction.ST: {
                     ram[addr++] = 19 << 2;
                     break;
                 }
-                case "jz": {
+                case instruction.JZ: {
                     ram[addr++] = 20 << 2;
                     break;
                 }
-                case "jn": {
+                case instruction.JN: {
                     ram[addr++] = 21 << 2;
                     break;
                 }
             }
 
             // Check length of arguments
-            if(tokens.length - 1 != recognisedArgType[opIndex].length) {
+            if(tokens.length - 1 != recognisedArgType[inst].length) {
                 setAssemblerError(true);
                 setAssemblerMessage("[Line " + (line + 1) + "] wrong amount of arguments for instruction '" + tokens[0] + "'.");
                 return;
@@ -714,17 +715,17 @@ export default function Emulator() {
             }
 
             const findRegisterTokenOffset = (i: number, token: number) => {
-                switch(recognisedInstructions[opIndex]) {
-                    case "st": {
+                switch(inst) {
+                    case instruction.ST: {
                         setRegisterSrcDest(addr - 2, i,token - 2);
                         break;
                     }
-                    case "ldio":
-                    case "stio":
-                    case "j":
-                    case "jz":
-                    case "jn":
-                    case "jnz": {
+                    case instruction.LDIO:
+                    case instruction.STIO:
+                    case instruction.J:
+                    case instruction.JZ:
+                    case instruction.JN:
+                    case instruction.JNZ: {
                         setRegisterSrcDest(addr - 1, i,token - 1);
                         break;
                     }
@@ -742,7 +743,7 @@ export default function Emulator() {
 
                 let currentlyChecking = "";
 
-                switch(recognisedArgType[opIndex][token - 1]) {
+                switch(recognisedArgType[inst][token - 1]) {
                     case 'r': {
                         currentlyChecking = "REGISTER";
 
@@ -946,6 +947,7 @@ export default function Emulator() {
             <Grid size={4}>
                 <Paper className={`${styles.paper} ${styles.visualizer}`}>
                     <Typography variant="subtitle1" sx={{marginLeft: "5px"}}>BBC state</Typography>
+                    <ViewInstruction memoryContent={"8"} />
                     <Card variant="outlined" className={styles.registers}>
                         <Typography variant="h6" sx={{marginBottom: "10px"}}>Registers</Typography>
                         <TextField className={styles.register} label="PC" sx={{width: "65pt"}} value={showHexValues? "0x" + ('000' + reg_PC.toString(16)).slice(-4) : reg_PC} color="primary" focused />
