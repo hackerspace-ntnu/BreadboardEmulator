@@ -335,7 +335,6 @@ export default function Emulator() {
                 }
                 case instruction.NAND: {
                     //%dest = %srcA NAND %srcB
-                    console.log(regs[srcA] & regs[srcB]);
                     regs[dest] = parseInt((regs[srcA] & regs[srcB]).toString(2).split("").map((el) => el === '0' ? '1' : '0').join(""), 2);
                     //setReg(dest, parseInt(('0000000000000000' + (getReg(srcA) & getReg(srcB)).toString(2)).slice(-16).split("").map((el) => el === '0' ? '1' : '0').join(""), 2));
                     break;
