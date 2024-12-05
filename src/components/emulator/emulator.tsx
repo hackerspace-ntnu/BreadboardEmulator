@@ -20,8 +20,9 @@ import FastForwardIcon from '@mui/icons-material/FastForward';
 import PauseIcon from '@mui/icons-material/Pause';
 import StopIcon from '@mui/icons-material/Stop';
 import MoveDownIcon from '@mui/icons-material/MoveDown';
+import ViewInstruction from "@/components/viewInstruction/viewInstruction";
 
-enum instruction {
+export enum instruction {
     NOP,
     MV,
     LI,
@@ -334,7 +335,6 @@ export default function Emulator() {
                 }
                 case instruction.NAND: {
                     //%dest = %srcA NAND %srcB
-                    console.log(regs[srcA] & regs[srcB]);
                     regs[dest] = parseInt((regs[srcA] & regs[srcB]).toString(2).split("").map((el) => el === '0' ? '1' : '0').join(""), 2);
                     //setReg(dest, parseInt(('0000000000000000' + (getReg(srcA) & getReg(srcB)).toString(2)).slice(-16).split("").map((el) => el === '0' ? '1' : '0').join(""), 2));
                     break;
@@ -945,6 +945,10 @@ export default function Emulator() {
             <Grid size={4}>
                 <Paper className={`${styles.paper} ${styles.visualizer}`}>
                     <Typography variant="subtitle1" sx={{marginLeft: "5px"}}>BBC state</Typography>
+                    <Card variant="outlined" className={styles.registers}>
+                        <Typography variant="h6">Instruction</Typography>
+                        <ViewInstruction memoryContent={ram[reg_PC]? ram[reg_PC] : 0} immContent={ram[reg_PC + 1]? ram[reg_PC + 1] : 0} />
+                    </Card>
                     <Card variant="outlined" className={styles.registers}>
                         <Typography variant="h6" sx={{marginBottom: "10px"}}>Registers</Typography>
                         <TextField className={styles.register} label="PC" sx={{width: "65pt"}} value={showHexValues? "0x" + ('000' + reg_PC.toString(16)).slice(-4) : reg_PC} color="primary" focused />
