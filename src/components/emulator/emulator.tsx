@@ -13,7 +13,7 @@ import {
 } from "@mui/material";
 import Grid from '@mui/material/Grid2';
 import styles from '@/app/ui/emulator.module.css';
-import {memo, useEffect, useState} from "react";
+import {useEffect, useState} from "react";
 import Canvas from "@/components/canvas/canvas";
 import PlayArrowIcon from '@mui/icons-material/PlayArrow';
 import FastForwardIcon from '@mui/icons-material/FastForward';
@@ -122,6 +122,10 @@ export default function Emulator() {
             assemble()
 
     }, [dynamicAssemble, code])
+
+    useEffect(() => {
+        console.log("Assembler finished.")
+    }, [assemblerComplete])
 
     useEffect(() => {
         setRandomRam()
@@ -855,7 +859,6 @@ export default function Emulator() {
         setAssemblerComplete(true);
         setAssemblerError(false);
         setAssemblerMessage("Success - assembled " + byteCount + " bytes.");
-        console.log("Interpreting finished successfully, RAM is valid.")
     }
 
     return <>
