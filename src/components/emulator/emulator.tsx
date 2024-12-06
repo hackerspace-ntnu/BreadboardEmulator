@@ -13,7 +13,7 @@ import {
 } from "@mui/material";
 import Grid from '@mui/material/Grid2';
 import styles from '@/app/ui/emulator.module.css';
-import {useEffect, useState} from "react";
+import {memo, useEffect, useState} from "react";
 import Canvas from "@/components/canvas/canvas";
 import PlayArrowIcon from '@mui/icons-material/PlayArrow';
 import FastForwardIcon from '@mui/icons-material/FastForward';
@@ -248,7 +248,7 @@ export default function Emulator() {
                 PC = 65535 + PC + 1
 
             // fetch
-            const currentInstruction = ('000000000000000' + (PC > 32767? videoMemory[PC - 32768] : memory[PC]).toString(2)).slice(-16);
+            const currentInstruction = ('000000000000000' + (PC > 32767? videoMemory[PC - 32768] : memory[PC])?.toString(2)).slice(-16);
 
             //decode
             const opcode = parseInt(currentInstruction.substring(9, 14), 2);
@@ -259,7 +259,8 @@ export default function Emulator() {
             let didJump = false;
 
             // execute
-            switch(opcode) {
+            switch(opcode as instruction) {
+                case undefined:
                 case instruction.NOP: {
                     //%PC = %PC + 1
                     break;
@@ -272,36 +273,44 @@ export default function Emulator() {
                 }
                 case instruction.LI: {
                     //%dest = $imm
-                    regs[dest] = memory[++PC];
-
+                    const addr = ++PC;
+                    regs[dest] = addr > 32767? videoMemory[addr - 32768] : memory[addr];
                     //setReg(dest, memory[PC + 1]);
                     break;
                 }
                 case instruction.LD: {
                     //%dest = memory[$imm]
-                    regs[dest] = memory[memory[++PC]];
+                    const addr = ++PC;
+                    const imm = addr > 32767? videoMemory[addr - 32768] : memory[addr];
+
+                    regs[dest] = imm > 32767? videoMemory[imm - 32768] : memory[imm];
                     //setReg(dest, memory[memory[PC + 1]]);
                     break;
                 }
                 case instruction.LDIND: {
                     //%dest = memory[%srcA]
-                    regs[dest] = memory[regs[srcA]];
+                    const addr = regs[srcA];
+
+                    regs[dest] = addr > 32767? videoMemory[addr - 32768] : memory[addr];
                     //setReg(dest, memory[getReg(srcA)]);
                     break;
                 }
                 case instruction.LDIO: {
                     //%dest = memory[%srcA + $imm]
-                    regs[dest] = memory[regs[srcA] + memory[++PC]];
+                    let addr = regs[srcA] + (++PC > 32767? videoMemory[PC - 32768] : memory[PC]);
+                    addr = addr > 65535? addr - 65536 : addr;
+
+                    regs[dest] = addr > 32767? videoMemory[addr - 32768] : memory[addr];
                     //setReg(dest, memory[getReg(srcA) + memory[PC + 1]]);
                     break;
                 }
                 case instruction.STIO: {
                     //memory[%srcA + $imm] = %srcB
                     const val = regs[srcB];
-                    const addr = regs[srcA] + memory[++PC];
+                    const addr = regs[srcA] + (++PC > 32767? videoMemory[PC - 32768] : memory[PC]);
 
                     if(addr > 32767) {
-                        videoMemory[addr - 32767] = val;
+                        videoMemory[addr - 32768] = val;
                     } else {
                         memory[addr] = val;
                     }
@@ -366,20 +375,20 @@ export default function Emulator() {
                 }
                 case instruction.JNZ: {
                     //%PC = %srcA == 0 ? %PC + 1 : $imm
-                    PC = regs[srcA] == 0 ? PC + 2 : memory[++PC];
+                    PC = regs[srcA] == 0 ? PC + 2 : (++PC > 32767? videoMemory[PC - 32768] : memory[PC]);
                     didJump = true;
                     //jumpaddr = getReg(srcA) == 0 ? -1 : memory[PC + 1];
                     break;
                 }
                 case instruction.JIMM: {
                     //%PC = $imm
-                    PC = memory[++PC];
+                    PC = ++PC > 32767? videoMemory[PC - 32768] : memory[PC];
                     didJump = true;
                     break;
                 }
                 case instruction.ADDI: {
                     //%dest = %srcA + $imm
-                    const result = regs[srcA] + memory[++PC];
+                    const result = regs[srcA] + (++PC > 32767? videoMemory[PC - 32768] : memory[PC]);
                     regs[dest] = result > 65535 ? result - 65536 : result;
                     //setReg(dest, getReg(srcA) + memory[PC + 1]);
                     //PC 5
@@ -388,7 +397,7 @@ export default function Emulator() {
                 case instruction.ST: {
                     //memory[%imm] = %srcA
                     const val = regs[srcA];
-                    const addr = memory[++PC];
+                    const addr = ++PC > 32767? videoMemory[PC - 32768] : memory[PC];
 
                     if(addr > 32767) {
                         videoMemory[addr - 32768] = val;
@@ -399,13 +408,13 @@ export default function Emulator() {
                 }
                 case instruction.JZ: {
                     //%PC = %srcA != 0 ? %PC + 1 : $imm
-                    PC = regs[srcA] != 0 ? PC + 2 : memory[++PC];
+                    PC = regs[srcA] != 0 ? PC + 2 : (++PC > 32767? videoMemory[PC - 32768] : memory[PC]);
                     didJump = true;
                     break;
                 }
                 case instruction.JN: {
                     //%PC = %srcA != 0 ? %PC + 1 : $imm
-                    PC = regs[srcA] < 32768 ? PC + 2 : memory[++PC];
+                    PC = regs[srcA] < 32768 ? PC + 2 : (++PC > 32767? videoMemory[PC - 32768] : memory[PC]);
                     didJump = true;
                     break;
                 }
@@ -831,8 +840,6 @@ export default function Emulator() {
             }
         }
 
-        //console.log("Labels", labels, labelsAddr, usedLabels);
-
         for(let i = 0; i < usedLabels.length; i++) {
             const foundIndex = labels.findIndex((el) => el === usedLabels[i]);
             if(foundIndex === -1) {
@@ -865,7 +872,7 @@ export default function Emulator() {
                     {" "}
                     <Tooltip describeChild title={loaded? "Step to the next instruction." : "Start the CPU and manually step through instructions."}>
                         <span>
-                            <Button variant="contained" color="info" onClick={() => stepProgram()} disabled={!assemblerComplete} endIcon={<MoveDownIcon />}>
+                            <Button variant="contained" color="info" onClick={() => stepProgram()} endIcon={<MoveDownIcon />}>
                                 Step
                             </Button>
                         </span>
@@ -873,7 +880,7 @@ export default function Emulator() {
                     {" "}
                     <Tooltip describeChild title={running? "Pause the CPU." : loaded? "Start running the CPU from this point." : "Start the CPU."}>
                         <span>
-                            <Button sx={{width: "125px"}} variant="contained" color={running? 'warning': loaded? 'success' : 'success'} onClick={() => runProgram()} disabled={!assemblerComplete} endIcon={running? <PauseIcon /> : loaded? <PlayArrowIcon /> : <PlayArrowIcon />}>
+                            <Button sx={{width: "125px"}} variant="contained" color={running? 'warning': loaded? 'success' : 'success'} onClick={() => runProgram()} endIcon={running? <PauseIcon /> : loaded? <PlayArrowIcon /> : <PlayArrowIcon />}>
                                 {running? 'Pause' : loaded? 'Continue' : 'Run'}
                             </Button>
                         </span>
@@ -947,7 +954,7 @@ export default function Emulator() {
                     <Typography variant="subtitle1" sx={{marginLeft: "5px"}}>BBC state</Typography>
                     <Card variant="outlined" className={styles.registers}>
                         <Typography variant="h6">Instruction</Typography>
-                        <ViewInstruction memoryContent={ram[reg_PC]? ram[reg_PC] : 0} immContent={ram[reg_PC + 1]? ram[reg_PC + 1] : 0} />
+                        <ViewInstruction memoryContent={reg_PC > 32767? vram[reg_PC - 32768] : ram[reg_PC]} immContent={reg_PC + 1 > 32767? vram[reg_PC - 32767] : ram[reg_PC + 1]} />
                     </Card>
                     <Card variant="outlined" className={styles.registers}>
                         <Typography variant="h6" sx={{marginBottom: "10px"}}>Registers</Typography>
