@@ -13,6 +13,11 @@ export default function ViewInstruction(props: IViewInstructionProps) {
     const [decodedInstruction, setDecodedInstruction] = useState("");
 
     useEffect(() => {
+        if(props.memoryContent === undefined || props.immContent === undefined) {
+            setDecodedInstruction("Memory undefined.")
+            return;
+        }
+
         const val = ('00000000000000' + props.memoryContent.toString(2)).slice(-16);
         const inst = val.slice(9, 14);
 
@@ -21,9 +26,9 @@ export default function ViewInstruction(props: IViewInstructionProps) {
         const dest = "r" + parseInt(val.slice(0, 3).split("").reverse().join(("")), 2);
         const imm = parseInt(('0000000000000000' + props.immContent.toString(2)).slice(-16), 2);
 
-        const instn = instruction[parseInt(inst, 2)];
-
+        let instn = instruction[parseInt(inst, 2)];
         let theRest = " "
+
         switch(instruction[instn as keyof typeof instruction]) {
             case instruction.NOP: {
                 break;
@@ -76,8 +81,9 @@ export default function ViewInstruction(props: IViewInstructionProps) {
                 theRest += imm + ", " + srcA;
                 break;
             }
-            default: {
-                theRest += ""
+            case undefined: {
+                theRest += "";
+                instn = "???"
             }
         }
 
