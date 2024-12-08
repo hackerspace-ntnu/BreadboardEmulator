@@ -168,8 +168,6 @@ export default function EmulatorComponent() {
     }, [running, completedExecution])
 
     const assemble = () => {
-        const state = CPUInit();
-
         setAssemblerComplete(false);
 
         if(code === "") {
@@ -271,7 +269,7 @@ export default function EmulatorComponent() {
                 if(val < 0)
                     val = 65536 + val
 
-                state.memory[addr++] = val;
+                CPUState.memory[addr++] = val;
 
                 byteCount += 2;
 
@@ -287,93 +285,95 @@ export default function EmulatorComponent() {
                 return;
             }
 
+            byteCount += 2;
+
             switch(inst) {
                 case Instruction.NOP: {
-                    state.memory[addr++] = 0 << 2;
+                    CPUState.memory[addr++] = 0 << 2;
                     break;
                 }
                 case Instruction.MV: {
-                    state.memory[addr++] = 1 << 2;
+                    CPUState.memory[addr++] = 1 << 2;
                     break;
                 }
                 case Instruction.LI: {
-                    state.memory[addr++] = 2 << 2;
+                    CPUState.memory[addr++] = 2 << 2;
                     break;
                 }
                 case Instruction.LD: {
-                    state.memory[addr++] = 3 << 2;
+                    CPUState.memory[addr++] = 3 << 2;
                     break;
                 }
                 case Instruction.LDIND: {
-                    state.memory[addr++] = 4 << 2;
+                    CPUState.memory[addr++] = 4 << 2;
                     break;
                 }
                 case Instruction.LDIO: {
-                    state.memory[addr++] = 5 << 2;
+                    CPUState.memory[addr++] = 5 << 2;
                     break;
                 }
                 case Instruction.STIO: {
-                    state.memory[addr++] = 6 << 2;
+                    CPUState.memory[addr++] = 6 << 2;
                     break;
                 }
                 case Instruction.ADD: {
-                    state.memory[addr++] = 7 << 2;
+                    CPUState.memory[addr++] = 7 << 2;
                     break;
                 }
                 case Instruction.SUB: {
-                    state.memory[addr++] = 8 << 2;
+                    CPUState.memory[addr++] = 8 << 2;
                     break;
                 }
                 case Instruction.NEG: {
-                    state.memory[addr++] = 9 << 2;
+                    CPUState.memory[addr++] = 9 << 2;
                     break;
                 }
                 case Instruction.XOR: {
-                    state.memory[addr++] = 10 << 2;
+                    CPUState.memory[addr++] = 10 << 2;
                     break;
                 }
                 case Instruction.NAND: {
-                    state.memory[addr++] = 11 << 2;
+                    CPUState.memory[addr++] = 11 << 2;
                     break;
                 }
                 case Instruction.AND: {
-                    state.memory[addr++] = 12 << 2;
+                    CPUState.memory[addr++] = 12 << 2;
                     break;
                 }
                 case Instruction.OR: {
-                    state.memory[addr++] = 13 << 2;
+                    CPUState.memory[addr++] = 13 << 2;
                     break;
                 }
                 case Instruction.NOT: {
-                    state.memory[addr++] = 14 << 2;
+                    CPUState.memory[addr++] = 14 << 2;
                     break;
                 }
                 case Instruction.J: {
-                    state.memory[addr++] = 15 << 2;
+                    CPUState.memory[addr++] = 15 << 2;
                     break;
                 }
                 case Instruction.JNZ: {
-                    state.memory[addr++] = 16 << 2;
+                    CPUState.memory[addr++] = 16 << 2;
                     break;
                 }
                 case Instruction.JIMM: {
-                    state.memory[addr++] = 17 << 2;
+                    CPUState.memory[addr++] = 17 << 2;
                     break;
                 }
                 case Instruction.ADDI: {
-                    state.memory[addr++] = 18 << 2;
+                    CPUState.memory[addr++] = 18 << 2;
                     break;
                 }
                 case Instruction.ST: {
-                    state.memory[addr++] = 19 << 2;
+                    CPUState.memory[addr++] = 19 << 2;
                     break;
                 }
                 case Instruction.JZ: {
-                    state.memory[addr++] = 20 << 2;
+                    CPUState.memory[addr++] = 20 << 2;
                     break;
                 }
                 case Instruction.JN: {
-                    state.memory[addr++] = 21 << 2;
+                    CPUState.memory[addr++] = 21 << 2;
                     break;
                 }
             }
@@ -388,7 +388,7 @@ export default function EmulatorComponent() {
             //addr += recognisedInstructionLength[opIndex];
 
             const setRegisterSrcDest = (memoryAddr: number, reg: number, type: number) => {
-                state.memory[memoryAddr] |= parseInt(('000' + reg.toString(2)).slice(-3).split("").reverse().join(""), 2) << (7 + type * 3);
+                CPUState.memory[memoryAddr] |= parseInt(('000' + reg.toString(2)).slice(-3).split("").reverse().join(""), 2) << (7 + type * 3);
             }
 
             const findRegisterTokenOffset = (i: number, token: number) => {
@@ -442,31 +442,6 @@ export default function EmulatorComponent() {
                         break;
                     }
 
-                    case 'i': {
-                        currentlyChecking = "IMM16";
-
-                        if(checkToken === "") {
-                            break;
-                        }
-
-                        let immVal = Number(checkToken.replace(",", ""))
-
-                        if(isNaN(immVal))
-                            break;
-
-                        if(immVal > 65536)
-                            break;
-
-                        error = false;
-
-                        if(immVal < 0)
-                            immVal = 65536 + immVal;
-
-                        state.memory[addr++] = immVal;
-
-                        break;
-                    }
-
                     case 'a': {
                         currentlyChecking = "IMM16LABEL"
 
@@ -489,9 +464,11 @@ export default function EmulatorComponent() {
                             if(immVal < 0)
                                 immVal = 65536 + immVal;
 
-                            state.memory[addr++] = immVal;
+                            CPUState.memory[addr++] = immVal;
                         }
 
+                        byteCount += 2;
+                        
                         error = false;
                         break;
                     }
@@ -516,13 +493,12 @@ export default function EmulatorComponent() {
 
                 return;
             } else {
-                state.memory[usedLabelsAddr[i]] = labelsAddr[foundIndex];
+                CPUState.memory[usedLabelsAddr[i]] = labelsAddr[foundIndex];
             }
         }
 
         setAssemblerComplete(true);
         setAssemblerError(false);
-        setCPUState(state);
         setAssemblerMessage("Success - assembled " + byteCount + " bytes.");
     }
 
