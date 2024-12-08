@@ -1,13 +1,14 @@
 "use client";
 
 import {
+    AppBar, Breadcrumbs,
     Button,
     Card,
     FormControlLabel,
     Link,
     Paper,
     Switch,
-    TextField,
+    TextField, Toolbar,
     Tooltip,
     Typography
 } from "@mui/material";
@@ -245,9 +246,6 @@ export default function Emulator() {
         ]
 
         for(let step = 0; step < steps; step++) {
-            if(PC > 65535)
-                PC = PC - 65536;
-
             if(PC < 0)
                 PC = 65535 + PC + 1
 
@@ -425,6 +423,10 @@ export default function Emulator() {
             }
 
             PC = didJump ? PC : PC + 1;
+
+            if(PC > 65535) {
+                PC = PC - 65536;
+            }
         }
 
         setReg_PC(PC);
@@ -721,8 +723,6 @@ export default function Emulator() {
 
             const setRegisterSrcDest = (memoryAddr: number, reg: number, type: number) => {
                 ram[memoryAddr] |= parseInt(('000' + reg.toString(2)).slice(-3).split("").reverse().join(""), 2) << (7 + type * 3);
-
-                byteCount += 2;
             }
 
             const findRegisterTokenOffset = (i: number, token: number) => {
@@ -797,7 +797,6 @@ export default function Emulator() {
                             immVal = 65536 + immVal;
 
                         ram[addr++] = immVal;
-                        byteCount += 2;
 
                         break;
                     }
@@ -825,7 +824,6 @@ export default function Emulator() {
                                 immVal = 65536 + immVal;
 
                             ram[addr++] = immVal;
-                            byteCount += 2;
                         }
 
                         error = false;
@@ -862,6 +860,18 @@ export default function Emulator() {
     }
 
     return <>
+        <AppBar className={styles.header} position={"static"} color="transparent">
+            <Toolbar variant="dense">
+                <Breadcrumbs aria-label="breadcrumb">
+                    <Link href={"https://www.hackerspace-ntnu.no"} underline="hover" color="inherit">Hackerspace NTNU</Link>
+                    <Typography color="inherit">Breadboard Computer</Typography>
+                    <Typography color="inherit" sx={{ color: 'text.primary' }}>Emulator</Typography>
+                </Breadcrumbs>
+                <Typography variant={"subtitle2"} sx={{ color: 'text.secondary' }} className={styles.versionInfo}>
+                    {process.env.BUILD_VERSION ? "v" + process.env.BUILD_VERSION : "v1.081224a"}
+                </Typography>
+            </Toolbar>
+        </AppBar>
         <Grid container className={styles.grid}>
             <Grid size={8}>
                 <Card className={styles.buttons}>

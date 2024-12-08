@@ -2,6 +2,11 @@
     margin: 1em;
 }
 
+.versionInfo {
+    position: absolute;
+    right: 10px;
+}
+
 .paper {
     margin: 5px;
 }
