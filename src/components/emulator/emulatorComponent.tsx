@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/exhaustive-deps */
 "use client";
 
 import {
@@ -17,51 +18,14 @@ import styles from '@/app/ui/emulator.module.css';
 import {useEffect, useState} from "react";
 import Canvas from "@/components/canvas/canvas";
 import PlayArrowIcon from '@mui/icons-material/PlayArrow';
-import FastForwardIcon from '@mui/icons-material/FastForward';
 import PauseIcon from '@mui/icons-material/Pause';
 import StopIcon from '@mui/icons-material/Stop';
 import MoveDownIcon from '@mui/icons-material/MoveDown';
 import ViewInstructionComponent from "@/components/viewInstruction/viewInstructionComponent";
-import {CPUInit} from "@/emulation/emulator";
-
-export enum instruction {
-    NOP,
-    MV,
-    LI,
-    LD,
-    LDIND,
-    LDIO,
-    STIO,
-    ADD,
-    SUB,
-    NEG,
-    XOR,
-    NAND,
-    AND,
-    OR,
-    NOT,
-    J,
-    JNZ,
-    JIMM,
-    ADDI,
-    ST,
-    JZ,
-    JN
-}
+import {CPUInit, CPUStep, ICPUState, Instruction, Register, verify16BitNum} from "@/emulation/emulator";
 
 export default function EmulatorComponent() {
-    const [reg_PC, setReg_PC] = useState(0);
-    const [reg_r0, setReg_r0] = useState(0);
-    const [reg_r1, setReg_r1] = useState(0);
-    const [reg_r2, setReg_r2] = useState(0);
-    const [reg_r3, setReg_r3] = useState(0);
-    const [reg_r4, setReg_r4] = useState(0);
-    const [reg_r5, setReg_r5] = useState(0);
-    const [reg_r6, setReg_r6] = useState(0);
-    const [reg_r7, setReg_r7] = useState(0);
-
-    const [ram, setRam] =  useState(Array<number>(32768));
-    const [vram, setvram] = useState(Array<number>(32768));
+    const [CPUState, setCPUState] = useState<ICPUState>({PC: 0, memory: Array<number>(65535), registers: Array<Register>(8)});
 
     const [clockSpeed, setClockSpeed] = useState("100");
     const [clockSpeedModifier, setClockSpeedModifier] = useState(0);
@@ -81,78 +45,40 @@ export default function EmulatorComponent() {
     const [showHexValues, setShowHexValues] = useState(false);
     const [cpuTimeout, setCpuTimeout] = useState<NodeJS.Timeout>();
     const [canvasUpdateKey, setCanvasUpdateKey] = useState<string>();
-    const [instructionsToRun, setInstructionsToRun] = useState(1000);
-    const [advancedView, setAdvancedView] = useState(false);
-
-    const setRandomRam = () => {
-        setLoaded(false);
-        setRunning(false);
-        setAdvancedView(false);
-
-        const newVram = Array<number>(32768);
-
-        for(let i = 0; i < 32768; i++) {
-            newVram[i] = Math.floor(Math.random() * 256);
-        }
-
-        const emptyRam = Array<number>(32768);
-
-        for(let i = 0; i < 32768; i++) {
-            emptyRam[i] = Math.floor(Math.random() * 65536);
-        }
-
-        setvram(newVram);
-        setRam(emptyRam);
-
-        setReg_PC(0);
-        setReg_r0(Math.floor(Math.random() * 65536));
-        setReg_r1(Math.floor(Math.random() * 65536));
-        setReg_r2(Math.floor(Math.random() * 65536));
-        setReg_r3(Math.floor(Math.random() * 65536));
-        setReg_r4(Math.floor(Math.random() * 65536));
-        setReg_r5(Math.floor(Math.random() * 65536));
-        setReg_r6(Math.floor(Math.random() * 65536));
-        setReg_r7(Math.floor(Math.random() * 65536));
-
-        console.log(CPUInit())
-    }
 
     useEffect(() => {
-        if(loaded || running) {
-            setRandomRam();
-        }
-
         if(dynamicAssemble)
             assemble()
 
     }, [dynamicAssemble, code])
 
     useEffect(() => {
-        console.log("Assembler finished.")
-    }, [assemblerComplete])
+        setCPUState(CPUInit());
 
-    useEffect(() => {
-        setRandomRam()
         setInterval(() => {
             setCanvasUpdateKey(Date.now().toString());
         }, 1000)
 
         console.log("Running 100 tests to determine clock modifier...");
+
         let sum = 0;
 
         for(let i = 0; i < 100; i++) {
-            ram[0] = 8; //LI
-            const clockStart = window.performance.now()
-            cpuStep(1);
-            const clockStop = window.performance.now()
+            const state: ICPUState = {
+                PC: 0,
+                registers: [0, 0, 0, 0, 0, 0, 0, 0],
+                memory: [8, 1]
+            };
 
-            sum += (clockStop - clockStart) * 1000;
+            const clockStart = window.performance.now();
+            CPUStep(state, 1);
+            const clockStop = window.performance.now();
+
+            sum += (clockStop - clockStart);
         }
 
-        console.log("Tests complete. Result:", sum / 100);
+        console.log("Tests complete. Result:", sum / 100, "ms");
         setClockSpeedModifier(sum / 100);
-
-        setRandomRam()
     }, []);
 
     const recognisedArgType = [
@@ -180,269 +106,6 @@ export default function EmulatorComponent() {
         ['r', 'a']
     ]
 
-    const getReg = (index: number): number  => {
-        switch(index) {
-            default:
-                return 12345; //error
-            case 0:
-                return reg_r0;
-            case 1:
-                return reg_r1;
-            case 2:
-                return reg_r2;
-            case 3:
-                return reg_r3;
-            case 4:
-                return reg_r4;
-            case 5:
-                return reg_r5;
-            case 6:
-                return reg_r6;
-            case 7:
-                return reg_r7;
-        }
-    }
-
-    const setReg = (index: number, value: number) => {
-        switch(index) {
-            case 0:
-                setReg_r0(value);
-                break;
-            case 1:
-                setReg_r1(value);
-                break;
-            case 2:
-                setReg_r2(value);
-                break;
-            case 3:
-                setReg_r3(value);
-                break;
-            case 4:
-                setReg_r4(value);
-                break;
-            case 5:
-                setReg_r5(value);
-                break;
-            case 6:
-                setReg_r6(value);
-                break;
-            case 7:
-                setReg_r7(value);
-                break;
-        }
-    }
-
-    const cpuStep = (steps: number) => {
-        const memory = ram;
-        const videoMemory = vram;
-
-        let PC = reg_PC;
-        const regs = [
-            reg_r0,
-            reg_r1,
-            reg_r2,
-            reg_r3,
-            reg_r4,
-            reg_r5,
-            reg_r6,
-            reg_r7
-        ]
-
-        for(let step = 0; step < steps; step++) {
-            if(PC < 0)
-                PC = 65535 + PC + 1
-
-            // fetch
-            const currentInstruction = ('000000000000000' + (PC > 32767? videoMemory[PC - 32768] : memory[PC])?.toString(2)).slice(-16);
-
-            //decode
-            const opcode = parseInt(currentInstruction.substring(9, 14), 2);
-            const srcA = parseInt(currentInstruction.substring(6, 9).split("").reverse().join(""), 2)
-            const srcB = parseInt(currentInstruction.substring(3, 6).split("").reverse().join(""), 2)
-            const dest = parseInt(currentInstruction.substring(0, 3).split("").reverse().join(""), 2)
-
-            let didJump = false;
-
-            // execute
-            switch(opcode as instruction) {
-                case undefined:
-                case instruction.NOP: {
-                    //%PC = %PC + 1
-                    break;
-                }
-                case instruction.MV: {
-                    //%dest = %srcA
-                    regs[dest] = regs[srcA];
-                    //setReg(dest, getReg(srcA));
-                    break;
-                }
-                case instruction.LI: {
-                    //%dest = $imm
-                    const addr = ++PC;
-                    regs[dest] = addr > 32767? videoMemory[addr - 32768] : memory[addr];
-                    //setReg(dest, memory[PC + 1]);
-                    break;
-                }
-                case instruction.LD: {
-                    //%dest = memory[$imm]
-                    const addr = ++PC;
-                    const imm = addr > 32767? videoMemory[addr - 32768] : memory[addr];
-
-                    regs[dest] = imm > 32767? videoMemory[imm - 32768] : memory[imm];
-                    //setReg(dest, memory[memory[PC + 1]]);
-                    break;
-                }
-                case instruction.LDIND: {
-                    //%dest = memory[%srcA]
-                    const addr = regs[srcA];
-
-                    regs[dest] = addr > 32767? videoMemory[addr - 32768] : memory[addr];
-                    //setReg(dest, memory[getReg(srcA)]);
-                    break;
-                }
-                case instruction.LDIO: {
-                    //%dest = memory[%srcA + $imm]
-                    let addr = regs[srcA] + (++PC > 32767? videoMemory[PC - 32768] : memory[PC]);
-                    addr = addr > 65535? addr - 65536 : addr;
-
-                    regs[dest] = addr > 32767? videoMemory[addr - 32768] : memory[addr];
-                    //setReg(dest, memory[getReg(srcA) + memory[PC + 1]]);
-                    break;
-                }
-                case instruction.STIO: {
-                    //memory[%srcA + $imm] = %srcB
-                    const val = regs[srcB];
-                    const addr = regs[srcA] + (++PC > 32767? videoMemory[PC - 32768] : memory[PC]);
-
-                    if(addr > 32767) {
-                        videoMemory[addr - 32768] = val;
-                    } else {
-                        memory[addr] = val;
-                    }
-                    break;
-                }
-                case instruction.ADD: {
-                    //%dest = %srcA + %srcB
-                    const result = regs[srcA] + regs[srcB];
-                    regs[dest] = result > 65535 ? result - 65536 : result
-                    //setReg(dest, result > 65536 ? result % 65536 : result);
-                    break;
-                }
-                case instruction.SUB: {
-                    //%dest = %srcA – %srcB
-                    const result = regs[srcA] - regs[srcB];
-                    regs[dest] = result < 0 ? 65536 + result : result;
-                    //setReg(dest, result < 0 ? 65536 - result : result);
-                    break;
-                }
-                case instruction.NEG: {
-                    //%dest = ~(%srcA) + 1
-                    regs[dest] = parseInt(('0000000000000000' + ((regs[srcA]? regs[srcA] : 0).toString(2))).slice(-16).split("").map((el) => el === '0' ? '1' : '0').join(""), 2) + 1;
-                    //setReg(dest, parseInt(('0000000000000000' + (getReg(srcA).toString(2))).slice(-16).split("").map((el) => el === '0' ? '1' : '0').join(""), 2) + 1);
-                    break;
-                }
-                case instruction.XOR: {
-                    //%dest = %srcA XOR %srcB
-                    regs[dest] = regs[srcA] ^ regs[srcB];
-                    //setReg(dest, getReg(srcA) ^ getReg(srcB));
-                    break;
-                }
-                case instruction.NAND: {
-                    //%dest = %srcA NAND %srcB
-                    regs[dest] = parseInt((regs[srcA] & regs[srcB]).toString(2).split("").map((el) => el === '0' ? '1' : '0').join(""), 2);
-                    //setReg(dest, parseInt(('0000000000000000' + (getReg(srcA) & getReg(srcB)).toString(2)).slice(-16).split("").map((el) => el === '0' ? '1' : '0').join(""), 2));
-                    break;
-                }
-                case instruction.AND: {
-                    //%dest = %srcA AND %srcB
-                    regs[dest] = regs[srcA] & regs[srcB];
-                    //setReg(dest, getReg(srcA) & getReg(srcB));
-                    break;
-                }
-                case instruction.OR: {
-                    //%dest = %srcA OR %srcB
-                    regs[dest] = regs[srcA] | regs[srcB];
-                    setReg(dest, getReg(srcA) | getReg(srcB));
-                    break;
-                }
-                case instruction.NOT: {
-                    //%dest = ~(%srcA)
-                    regs[dest] = parseInt(('0000000000000000' + ((regs[srcA]? regs[srcA] : 0).toString(2))).slice(-16).split("").map((el) => el === '0' ? '1' : '0').join(""), 2);
-                    //setReg(dest, parseInt(('0000000000000000' + (getReg(srcA).toString(2))).slice(-16).split("").map((el) => el === '0' ? '1' : '0').join(""), 2));
-                    break;
-                }
-                case instruction.J: {
-                    //%PC = %srcA
-                    PC = regs[srcA];
-                    didJump = true;
-                    //jumpaddr = getReg(srcA);
-                    break;
-                }
-                case instruction.JNZ: {
-                    //%PC = %srcA == 0 ? %PC + 1 : $imm
-                    PC = regs[srcA] == 0 ? PC + 2 : (++PC > 32767? videoMemory[PC - 32768] : memory[PC]);
-                    didJump = true;
-                    //jumpaddr = getReg(srcA) == 0 ? -1 : memory[PC + 1];
-                    break;
-                }
-                case instruction.JIMM: {
-                    //%PC = $imm
-                    PC = ++PC > 32767? videoMemory[PC - 32768] : memory[PC];
-                    didJump = true;
-                    break;
-                }
-                case instruction.ADDI: {
-                    //%dest = %srcA + $imm
-                    const result = regs[srcA] + (++PC > 32767? videoMemory[PC - 32768] : memory[PC]);
-                    regs[dest] = result > 65535 ? result - 65536 : result;
-                    //setReg(dest, getReg(srcA) + memory[PC + 1]);
-                    //PC 5
-                    break;
-                }
-                case instruction.ST: {
-                    //memory[%imm] = %srcA
-                    const val = regs[srcA];
-                    const addr = ++PC > 32767? videoMemory[PC - 32768] : memory[PC];
-
-                    if(addr > 32767) {
-                        videoMemory[addr - 32768] = val;
-                    } else {
-                        memory[addr] = val;
-                    }
-                    break;
-                }
-                case instruction.JZ: {
-                    //%PC = %srcA != 0 ? %PC + 1 : $imm
-                    PC = regs[srcA] != 0 ? PC + 2 : (++PC > 32767? videoMemory[PC - 32768] : memory[PC]);
-                    didJump = true;
-                    break;
-                }
-                case instruction.JN: {
-                    //%PC = %srcA != 0 ? %PC + 1 : $imm
-                    PC = regs[srcA] < 32768 ? PC + 2 : (++PC > 32767? videoMemory[PC - 32768] : memory[PC]);
-                    didJump = true;
-                    break;
-                }
-            }
-
-            PC = didJump ? PC : PC + 1;
-
-            if(PC > 65535) {
-                PC = PC - 65536;
-            }
-        }
-
-        setReg_PC(PC);
-        setRam(memory);
-        setvram(videoMemory);
-
-        for(let reg = 0; reg < 8; reg++) {
-            setReg(reg, regs[reg])
-        }
-
-        setCompletedExecution(!completedExecution);
-    }
-
     const runProgram = () => {
         if(running) {
             setRunning(false);
@@ -451,12 +114,10 @@ export default function EmulatorComponent() {
 
             const targetClock = parseFloat(clockSpeed) * 1000;
             console.log("Target clock speed:", targetClock + "Hz");
-            console.log("Clock speed modifier:", clockSpeedModifier.toFixed(3)+"microseconds");
+            console.log("Clock speed modifier:", clockSpeedModifier.toFixed(3)+"ms");
 
-            const clocksPerMs = 100000/clockSpeedModifier;
-            const stepsPerMs = targetClock/clocksPerMs;
-            console.log("--> Clocks per millisecond:", 1000/clockSpeedModifier);
-            console.log("--> Steps per millisecond:", stepsPerMs);
+            const stepsPerMs = targetClock/1000;
+            console.log("steps", stepsPerMs)
 
             if(stepsPerMs < 1) {
                 setMillis(1000 / targetClock);
@@ -471,7 +132,8 @@ export default function EmulatorComponent() {
     }
 
     const stopProgram = () => {
-        setRandomRam();
+        setCPUState(CPUInit());
+
         setRunning(false);
         setLoaded(false);
         setRunning(false);
@@ -481,26 +143,24 @@ export default function EmulatorComponent() {
         if(loaded && running) {
             setRunning(false);
         } else if(!loaded) {
-            setRandomRam();
+            setCPUState(CPUInit());
             setLoaded(true);
             assemble()
         }
 
-        cpuStep(1);
+        const state = CPUStep(CPUState, 1);
+        setCPUState(state);
     }
 
-    const fastProgram = () => {
-        setTimeout(() => {
-            cpuStep(instructionsToRun);
-
-            setCanvasUpdateKey(Date.now().toString())
-        }, 0);
+    const CPUStepRunning = (steps: number) => {
+        setCPUState(CPUStep(CPUState, steps));
+        setCompletedExecution(!completedExecution);
     }
 
     useEffect(() => {
         if(running) {
             setCpuTimeout(setTimeout(() => {
-                cpuStep(stepsPerMillis)
+                CPUStepRunning(stepsPerMillis);
             }, millis));
         } else {
             clearInterval(cpuTimeout);
@@ -508,6 +168,8 @@ export default function EmulatorComponent() {
     }, [running, completedExecution])
 
     const assemble = () => {
+        const state = CPUInit();
+
         setAssemblerComplete(false);
 
         if(code === "") {
@@ -526,6 +188,7 @@ export default function EmulatorComponent() {
         const usedLabels: string[] = [];
         const usedLablesLine: number[] = [];
         const usedLabelsAddr: number[] = [];
+
 
         let byteCount = 0;
 
@@ -608,14 +271,14 @@ export default function EmulatorComponent() {
                 if(val < 0)
                     val = 65536 + val
 
-                ram[addr++] = val;
+                state.memory[addr++] = val;
 
                 byteCount += 2;
 
                 continue;
             }
 
-            const inst = instruction[tokens[0].toUpperCase() as keyof typeof instruction]
+            const inst = Instruction[tokens[0].toUpperCase() as keyof typeof Instruction]
 
             // Check instruction is valid
             if(inst === undefined) {
@@ -625,92 +288,92 @@ export default function EmulatorComponent() {
             }
 
             switch(inst) {
-                case instruction.NOP: {
-                    ram[addr++] = 0 << 2;
+                case Instruction.NOP: {
+                    state.memory[addr++] = 0 << 2;
                     break;
                 }
-                case instruction.MV: {
-                    ram[addr++] = 1 << 2;
+                case Instruction.MV: {
+                    state.memory[addr++] = 1 << 2;
                     break;
                 }
-                case instruction.LI: {
-                    ram[addr++] = 2 << 2;
+                case Instruction.LI: {
+                    state.memory[addr++] = 2 << 2;
                     break;
                 }
-                case instruction.LD: {
-                    ram[addr++] = 3 << 2;
+                case Instruction.LD: {
+                    state.memory[addr++] = 3 << 2;
                     break;
                 }
-                case instruction.LDIND: {
-                    ram[addr++] = 4 << 2;
+                case Instruction.LDIND: {
+                    state.memory[addr++] = 4 << 2;
                     break;
                 }
-                case instruction.LDIO: {
-                    ram[addr++] = 5 << 2;
+                case Instruction.LDIO: {
+                    state.memory[addr++] = 5 << 2;
                     break;
                 }
-                case instruction.STIO: {
-                    ram[addr++] = 6 << 2;
+                case Instruction.STIO: {
+                    state.memory[addr++] = 6 << 2;
                     break;
                 }
-                case instruction.ADD: {
-                    ram[addr++] = 7 << 2;
+                case Instruction.ADD: {
+                    state.memory[addr++] = 7 << 2;
                     break;
                 }
-                case instruction.SUB: {
-                    ram[addr++] = 8 << 2;
+                case Instruction.SUB: {
+                    state.memory[addr++] = 8 << 2;
                     break;
                 }
-                case instruction.NEG: {
-                    ram[addr++] = 9 << 2;
+                case Instruction.NEG: {
+                    state.memory[addr++] = 9 << 2;
                     break;
                 }
-                case instruction.XOR: {
-                    ram[addr++] = 10 << 2;
+                case Instruction.XOR: {
+                    state.memory[addr++] = 10 << 2;
                     break;
                 }
-                case instruction.NAND: {
-                    ram[addr++] = 11 << 2;
+                case Instruction.NAND: {
+                    state.memory[addr++] = 11 << 2;
                     break;
                 }
-                case instruction.AND: {
-                    ram[addr++] = 12 << 2;
+                case Instruction.AND: {
+                    state.memory[addr++] = 12 << 2;
                     break;
                 }
-                case instruction.OR: {
-                    ram[addr++] = 13 << 2;
+                case Instruction.OR: {
+                    state.memory[addr++] = 13 << 2;
                     break;
                 }
-                case instruction.NOT: {
-                    ram[addr++] = 14 << 2;
+                case Instruction.NOT: {
+                    state.memory[addr++] = 14 << 2;
                     break;
                 }
-                case instruction.J: {
-                    ram[addr++] = 15 << 2;
+                case Instruction.J: {
+                    state.memory[addr++] = 15 << 2;
                     break;
                 }
-                case instruction.JNZ: {
-                    ram[addr++] = 16 << 2;
+                case Instruction.JNZ: {
+                    state.memory[addr++] = 16 << 2;
                     break;
                 }
-                case instruction.JIMM: {
-                    ram[addr++] = 17 << 2;
+                case Instruction.JIMM: {
+                    state.memory[addr++] = 17 << 2;
                     break;
                 }
-                case instruction.ADDI: {
-                    ram[addr++] = 18 << 2;
+                case Instruction.ADDI: {
+                    state.memory[addr++] = 18 << 2;
                     break;
                 }
-                case instruction.ST: {
-                    ram[addr++] = 19 << 2;
+                case Instruction.ST: {
+                    state.memory[addr++] = 19 << 2;
                     break;
                 }
-                case instruction.JZ: {
-                    ram[addr++] = 20 << 2;
+                case Instruction.JZ: {
+                    state.memory[addr++] = 20 << 2;
                     break;
                 }
-                case instruction.JN: {
-                    ram[addr++] = 21 << 2;
+                case Instruction.JN: {
+                    state.memory[addr++] = 21 << 2;
                     break;
                 }
             }
@@ -725,21 +388,21 @@ export default function EmulatorComponent() {
             //addr += recognisedInstructionLength[opIndex];
 
             const setRegisterSrcDest = (memoryAddr: number, reg: number, type: number) => {
-                ram[memoryAddr] |= parseInt(('000' + reg.toString(2)).slice(-3).split("").reverse().join(""), 2) << (7 + type * 3);
+                state.memory[memoryAddr] |= parseInt(('000' + reg.toString(2)).slice(-3).split("").reverse().join(""), 2) << (7 + type * 3);
             }
 
             const findRegisterTokenOffset = (i: number, token: number) => {
                 switch(inst) {
-                    case instruction.ST: {
+                    case Instruction.ST: {
                         setRegisterSrcDest(addr - 2, i,token - 2);
                         break;
                     }
-                    case instruction.LDIO:
-                    case instruction.STIO:
-                    case instruction.J:
-                    case instruction.JZ:
-                    case instruction.JN:
-                    case instruction.JNZ: {
+                    case Instruction.LDIO:
+                    case Instruction.STIO:
+                    case Instruction.J:
+                    case Instruction.JZ:
+                    case Instruction.JN:
+                    case Instruction.JNZ: {
                         setRegisterSrcDest(addr - 1, i,token - 1);
                         break;
                     }
@@ -799,7 +462,7 @@ export default function EmulatorComponent() {
                         if(immVal < 0)
                             immVal = 65536 + immVal;
 
-                        ram[addr++] = immVal;
+                        state.memory[addr++] = immVal;
 
                         break;
                     }
@@ -826,7 +489,7 @@ export default function EmulatorComponent() {
                             if(immVal < 0)
                                 immVal = 65536 + immVal;
 
-                            ram[addr++] = immVal;
+                            state.memory[addr++] = immVal;
                         }
 
                         error = false;
@@ -853,12 +516,13 @@ export default function EmulatorComponent() {
 
                 return;
             } else {
-                ram[usedLabelsAddr[i]] = labelsAddr[foundIndex];
+                state.memory[usedLabelsAddr[i]] = labelsAddr[foundIndex];
             }
         }
 
         setAssemblerComplete(true);
         setAssemblerError(false);
+        setCPUState(state);
         setAssemblerMessage("Success - assembled " + byteCount + " bytes.");
     }
 
@@ -910,28 +574,11 @@ export default function EmulatorComponent() {
                                size="small"
                         />
                     </Tooltip>
-                    {advancedView? <>
-                        {" "}
-                            <Tooltip describeChild title={"Run a pre-determined amount of cycles as fast as possible."}>
-                                <Button variant="contained" color="secondary" onClick={() => fastProgram()} endIcon={<FastForwardIcon />}>
-                                    Fast
-                                </Button>
-                            </Tooltip>
-                            {" "}
-                            <Tooltip describeChild title={"The amount of instructions to run before updating the emulator."}>
-                            <TextField label={"Instructions to run"}
-                                       value={instructionsToRun}
-                                       type={"number"}
-                                       onChange={(e) => setInstructionsToRun(parseInt(e.target.value))}
-                                       size="small"
-                            />
-                            </Tooltip>
-                        </> : "" }
                     {" "}
                     <TextField label={"Assembler output"}
                                className={styles.monospaceFont}
                                focused={assemblerMessage !== ""}
-                               color={assemblerError? "error" : "success"}
+                               color={assemblerError? "error" : assemblerComplete? "success" : "info"}
                                value={assemblerMessage}
                                size="small"
                                fullWidth
@@ -970,36 +617,36 @@ export default function EmulatorComponent() {
                     <Typography variant="subtitle1" sx={{marginLeft: "5px"}}>BBC state</Typography>
                     <Card variant="outlined" className={styles.registers}>
                         <Typography variant="h6">Instruction</Typography>
-                        <ViewInstructionComponent memoryContent={reg_PC > 32767? vram[reg_PC - 32768] : ram[reg_PC]} immContent={reg_PC + 1 > 32767? vram[reg_PC - 32767] : ram[reg_PC + 1]} />
+                        <ViewInstructionComponent memoryContent={CPUState.memory[CPUState.PC]} immContent={CPUState.memory[verify16BitNum(CPUState.PC + 1)]} />
                     </Card>
                     <Card variant="outlined" className={styles.registers}>
                         <Typography variant="h6" sx={{marginBottom: "10px"}}>Registers</Typography>
-                        <TextField className={styles.register} label="PC" sx={{width: "65pt"}} value={showHexValues? "0x" + ('000' + reg_PC.toString(16)).slice(-4) : reg_PC} color="primary" focused />
+                        <TextField className={styles.register} label="PC" sx={{width: "65pt"}} value={showHexValues? "0x" + ('000' + CPUState.PC.toString(16)).slice(-4) : CPUState.PC} color="primary" focused />
                         <br />
-                        <Tooltip describeChild arrow placement={"top"} title={reg_r0}>
-                            <TextField className={styles.register} label="r0" sx={{width: "65pt"}} value={showHexValues? "0x" + ('000' + reg_r0.toString(16)).slice(-4) : reg_r0 < 32767? reg_r0 : reg_r0 - 65536} color="secondary" focused />
+                        <Tooltip describeChild arrow placement={"top"} title={CPUState.registers[0]}>
+                            <TextField className={styles.register} label="r0" sx={{width: "65pt"}} value={showHexValues? "0x" + ('000' + CPUState.registers[0].toString(16)).slice(-4) : CPUState.registers[0] < 32767? CPUState.registers[0] : CPUState.registers[0] - 65536} color="secondary" focused />
                         </Tooltip>
-                        <Tooltip describeChild arrow placement={"top"} title={reg_r1}>
-                            <TextField className={styles.register} label="r1" sx={{width: "65pt"}} value={showHexValues? "0x" + ('000' + reg_r1.toString(16)).slice(-4) : reg_r1 < 32767? reg_r1 : reg_r1 - 65536} color="secondary" focused />
+                        <Tooltip describeChild arrow placement={"top"} title={CPUState.registers[1]}>
+                            <TextField className={styles.register} label="r1" sx={{width: "65pt"}} value={showHexValues? "0x" + ('000' + CPUState.registers[1].toString(16)).slice(-4) : CPUState.registers[1] < 32767? CPUState.registers[1] : CPUState.registers[1] - 65536} color="secondary" focused />
                         </Tooltip>
-                        <Tooltip describeChild arrow placement={"top"} title={reg_r2}>
-                            <TextField className={styles.register} label="r2" sx={{width: "65pt"}} value={showHexValues? "0x" + ('000' + reg_r2.toString(16)).slice(-4) : reg_r2 < 32767? reg_r2 : reg_r2 - 65536} color="secondary" focused />
+                        <Tooltip describeChild arrow placement={"top"} title={CPUState.registers[2]}>
+                            <TextField className={styles.register} label="r2" sx={{width: "65pt"}} value={showHexValues? "0x" + ('000' + CPUState.registers[2].toString(16)).slice(-4) : CPUState.registers[2] < 32767? CPUState.registers[2] : CPUState.registers[2] - 65536} color="secondary" focused />
                         </Tooltip>
-                        <Tooltip describeChild arrow placement={"top"} title={reg_r3}>
-                            <TextField className={styles.register} label="r3" sx={{width: "65pt"}} value={showHexValues? "0x" + ('000' + reg_r3.toString(16)).slice(-4) : reg_r3 < 32767? reg_r3 : reg_r3 - 65536} color="secondary" focused />
+                        <Tooltip describeChild arrow placement={"top"} title={CPUState.registers[3]}>
+                            <TextField className={styles.register} label="r3" sx={{width: "65pt"}} value={showHexValues? "0x" + ('000' + CPUState.registers[3].toString(16)).slice(-4) : CPUState.registers[3] < 32767? CPUState.registers[3] : CPUState.registers[3] - 65536} color="secondary" focused />
                         </Tooltip>
                         <br />
-                        <Tooltip describeChild arrow placement={"top"} title={reg_r4}>
-                            <TextField className={styles.register} label="r4" sx={{width: "65pt"}} value={showHexValues? "0x" + ('000' + reg_r4.toString(16)).slice(-4) : reg_r4 < 32767? reg_r4 : reg_r4 - 65536} color="secondary" focused />
+                        <Tooltip describeChild arrow placement={"top"} title={CPUState.registers[4]}>
+                            <TextField className={styles.register} label="r4" sx={{width: "65pt"}} value={showHexValues? "0x" + ('000' + CPUState.registers[4].toString(16)).slice(-4) : CPUState.registers[4] < 32767? CPUState.registers[4] : CPUState.registers[4] - 65536} color="secondary" focused />
                         </Tooltip>
-                        <Tooltip describeChild arrow placement={"top"} title={reg_r5}>
-                            <TextField className={styles.register} label="r5" sx={{width: "65pt"}} value={showHexValues? "0x" + ('000' + reg_r5.toString(16)).slice(-4) : reg_r5 < 32767? reg_r5 : reg_r5 - 65536} color="secondary" focused />
+                        <Tooltip describeChild arrow placement={"top"} title={CPUState.registers[5]}>
+                            <TextField className={styles.register} label="r5" sx={{width: "65pt"}} value={showHexValues? "0x" + ('000' + CPUState.registers[5].toString(16)).slice(-4) : CPUState.registers[5] < 32767? CPUState.registers[5] : CPUState.registers[5] - 65536} color="secondary" focused />
                         </Tooltip>
-                        <Tooltip describeChild arrow placement={"top"} title={reg_r6}>
-                            <TextField className={styles.register} label="r6" sx={{width: "65pt"}} value={showHexValues? "0x" + ('000' + reg_r6.toString(16)).slice(-4) : reg_r6 < 32767? reg_r6 : reg_r6 - 65536} color="secondary" focused />
+                        <Tooltip describeChild arrow placement={"top"} title={CPUState.registers[6]}>
+                            <TextField className={styles.register} label="r6" sx={{width: "65pt"}} value={showHexValues? "0x" + ('000' + CPUState.registers[6].toString(16)).slice(-4) : CPUState.registers[6] < 32767? CPUState.registers[6] : CPUState.registers[6] - 65536} color="secondary" focused />
                         </Tooltip>
-                        <Tooltip describeChild arrow placement={"top"} title={reg_r7}>
-                            <TextField className={styles.register} label="r7" sx={{width: "65pt"}} value={showHexValues? "0x" + ('000' + reg_r7.toString(16)).slice(-4) : reg_r7 < 32767? reg_r7 : reg_r7 - 65536} color="secondary" focused />
+                        <Tooltip describeChild arrow placement={"top"} title={CPUState.registers[7]}>
+                            <TextField className={styles.register} label="r7" sx={{width: "65pt"}} value={showHexValues? "0x" + ('000' + CPUState.registers[7].toString(16)).slice(-4) : CPUState.registers[7] < 32767? CPUState.registers[7] : CPUState.registers[7] - 65536} color="secondary" focused />
                         </Tooltip>
                         <Tooltip describeChild title={"Change between showing base-16 and base-10 numbers."}>
                             <Button variant="contained" color={showHexValues? "success" : "error"} onClick={() => setShowHexValues(!showHexValues)}>Hexadecimal</Button>
@@ -1009,7 +656,7 @@ export default function EmulatorComponent() {
                         <Tooltip describeChild placement={"left"} title={"Visual representation of the video memory. Refreshes once per second."}>
                             <Typography variant="h6" sx={{marginBottom: "10px"}}>PPU</Typography>
                         </Tooltip>
-                            <Canvas key={canvasUpdateKey} vram={vram}/>
+                            <Canvas key={canvasUpdateKey} memory={CPUState.memory}/>
                     </Card>
                 </Paper>
             </Grid>
