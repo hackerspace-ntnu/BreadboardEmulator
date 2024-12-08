@@ -1,13 +1,14 @@
 "use client";
 
 import {
+    AppBar, Breadcrumbs,
     Button,
     Card,
-    FormControlLabel,
+    FormControlLabel, IconButton,
     Link,
     Paper,
     Switch,
-    TextField,
+    TextField, Toolbar,
     Tooltip,
     Typography
 } from "@mui/material";
@@ -859,6 +860,18 @@ export default function Emulator() {
     }
 
     return <>
+        <AppBar className={styles.header} position={"static"} color="transparent">
+            <Toolbar variant="dense">
+                <Breadcrumbs aria-label="breadcrumb">
+                    <Link href={"https://www.hackerspace-ntnu.no"} underline="hover" color="inherit">Hackerspace NTNU</Link>
+                    <Typography color="inherit">Breadboard Computer</Typography>
+                    <Typography color="inherit" sx={{ color: 'text.primary' }}>Emulator</Typography>
+                </Breadcrumbs>
+                <Typography variant={"subtitle2"} sx={{ color: 'text.secondary' }} className={styles.versionInfo}>
+                    {process.env.BUILD_VERSION ? "v" + process.env.BUILD_VERSION : "v1.081224a"}
+                </Typography>
+            </Toolbar>
+        </AppBar>
         <Grid container className={styles.grid}>
             <Grid size={8}>
                 <Card className={styles.buttons}>
