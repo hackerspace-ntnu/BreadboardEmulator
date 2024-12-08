@@ -42,7 +42,7 @@
     height: auto;
     align-content: center;
     padding: 10px 0 10px 5px;
-    margin: 2px;
+    margin: 2px !important;
 }
 
 .register {
