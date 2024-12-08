@@ -22,6 +22,7 @@ import PauseIcon from '@mui/icons-material/Pause';
 import StopIcon from '@mui/icons-material/Stop';
 import MoveDownIcon from '@mui/icons-material/MoveDown';
 import ViewInstructionComponent from "@/components/viewInstruction/viewInstructionComponent";
+import {CPUInit} from "@/emulation/emulator";
 
 export enum instruction {
     NOP,
@@ -112,6 +113,8 @@ export default function EmulatorComponent() {
         setReg_r5(Math.floor(Math.random() * 65536));
         setReg_r6(Math.floor(Math.random() * 65536));
         setReg_r7(Math.floor(Math.random() * 65536));
+
+        console.log(CPUInit())
     }
 
     useEffect(() => {
