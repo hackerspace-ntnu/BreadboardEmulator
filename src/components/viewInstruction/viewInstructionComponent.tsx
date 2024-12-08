@@ -2,14 +2,14 @@ import {TextField} from "@mui/material";
 import {useEffect, useState} from "react";
 
 import styles from '@/app/ui/viewInstruction.module.css';
-import {instruction} from "@/components/emulator/emulator";
+import {Instruction} from "@/emulation/emulator";
 
 interface IViewInstructionProps {
     memoryContent: number,
     immContent: number
 }
 
-export default function ViewInstruction(props: IViewInstructionProps) {
+export default function ViewInstructionComponent(props: IViewInstructionProps) {
     const [decodedInstruction, setDecodedInstruction] = useState("");
 
     useEffect(() => {
@@ -26,58 +26,58 @@ export default function ViewInstruction(props: IViewInstructionProps) {
         const dest = "r" + parseInt(val.slice(0, 3).split("").reverse().join(("")), 2);
         const imm = parseInt(('0000000000000000' + props.immContent.toString(2)).slice(-16), 2);
 
-        let instn = instruction[parseInt(inst, 2)];
+        let instn = Instruction[parseInt(inst, 2)];
         let theRest = " "
 
-        switch(instruction[instn as keyof typeof instruction]) {
-            case instruction.NOP: {
+        switch(Instruction[instn as keyof typeof Instruction]) {
+            case Instruction.NOP: {
                 break;
             }
-            case instruction.LDIND:
-            case instruction.MV:
-            case instruction.NEG:
-            case instruction.NOT: {
+            case Instruction.LDIND:
+            case Instruction.MV:
+            case Instruction.NEG:
+            case Instruction.NOT: {
                 theRest += dest + ", " + srcA;
                 break;
             }
-            case instruction.LI:
-            case instruction.LD:  {
+            case Instruction.LI:
+            case Instruction.LD:  {
                 theRest += dest + ", " + imm;
                 break;
             }
-            case instruction.STIO:
-            case instruction.LDIO: {
+            case Instruction.STIO:
+            case Instruction.LDIO: {
                 theRest += srcA + ", " + srcB + ", " + imm;
                 break;
             }
-            case instruction.ADD:
-            case instruction.SUB:
-            case instruction.XOR:
-            case instruction.NAND:
-            case instruction.AND:
-            case instruction.OR: {
+            case Instruction.ADD:
+            case Instruction.SUB:
+            case Instruction.XOR:
+            case Instruction.NAND:
+            case Instruction.AND:
+            case Instruction.OR: {
                 theRest += dest + ", " + srcA + ", " + srcB;
                 break;
             }
-            case instruction.J: {
+            case Instruction.J: {
                 theRest += srcA;
                 break;
             }
-            case instruction.JNZ:
-            case instruction.JZ:
-            case instruction.JN: {
+            case Instruction.JNZ:
+            case Instruction.JZ:
+            case Instruction.JN: {
                 theRest += srcA + ", " + imm;
                 break;
             }
-            case instruction.JIMM: {
+            case Instruction.JIMM: {
                 theRest += imm;
                 break;
             }
-            case instruction.ADDI: {
+            case Instruction.ADDI: {
                 theRest += dest + ", " + srcA + ", " + imm;
                 break;
             }
-            case instruction.ST: {
+            case Instruction.ST: {
                 theRest += imm + ", " + srcA;
                 break;
             }
