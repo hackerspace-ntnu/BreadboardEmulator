@@ -245,9 +245,6 @@ export default function Emulator() {
         ]
 
         for(let step = 0; step < steps; step++) {
-            if(PC > 65535)
-                PC = PC - 65536;
-
             if(PC < 0)
                 PC = 65535 + PC + 1
 
@@ -425,6 +422,10 @@ export default function Emulator() {
             }
 
             PC = didJump ? PC : PC + 1;
+
+            if(PC > 65535) {
+                PC = PC - 65536;
+            }
         }
 
         setReg_PC(PC);
@@ -721,8 +722,6 @@ export default function Emulator() {
 
             const setRegisterSrcDest = (memoryAddr: number, reg: number, type: number) => {
                 ram[memoryAddr] |= parseInt(('000' + reg.toString(2)).slice(-3).split("").reverse().join(""), 2) << (7 + type * 3);
-
-                byteCount += 2;
             }
 
             const findRegisterTokenOffset = (i: number, token: number) => {
@@ -797,7 +796,6 @@ export default function Emulator() {
                             immVal = 65536 + immVal;
 
                         ram[addr++] = immVal;
-                        byteCount += 2;
 
                         break;
                     }
@@ -825,7 +823,6 @@ export default function Emulator() {
                                 immVal = 65536 + immVal;
 
                             ram[addr++] = immVal;
-                            byteCount += 2;
                         }
 
                         error = false;
