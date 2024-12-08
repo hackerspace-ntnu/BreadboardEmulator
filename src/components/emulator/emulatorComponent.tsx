@@ -21,7 +21,7 @@ import FastForwardIcon from '@mui/icons-material/FastForward';
 import PauseIcon from '@mui/icons-material/Pause';
 import StopIcon from '@mui/icons-material/Stop';
 import MoveDownIcon from '@mui/icons-material/MoveDown';
-import ViewInstruction from "@/components/viewInstruction/viewInstruction";
+import ViewInstructionComponent from "@/components/viewInstruction/viewInstructionComponent";
 
 export enum instruction {
     NOP,
@@ -48,7 +48,7 @@ export enum instruction {
     JN
 }
 
-export default function Emulator() {
+export default function EmulatorComponent() {
     const [reg_PC, setReg_PC] = useState(0);
     const [reg_r0, setReg_r0] = useState(0);
     const [reg_r1, setReg_r1] = useState(0);
@@ -967,7 +967,7 @@ export default function Emulator() {
                     <Typography variant="subtitle1" sx={{marginLeft: "5px"}}>BBC state</Typography>
                     <Card variant="outlined" className={styles.registers}>
                         <Typography variant="h6">Instruction</Typography>
-                        <ViewInstruction memoryContent={reg_PC > 32767? vram[reg_PC - 32768] : ram[reg_PC]} immContent={reg_PC + 1 > 32767? vram[reg_PC - 32767] : ram[reg_PC + 1]} />
+                        <ViewInstructionComponent memoryContent={reg_PC > 32767? vram[reg_PC - 32768] : ram[reg_PC]} immContent={reg_PC + 1 > 32767? vram[reg_PC - 32767] : ram[reg_PC + 1]} />
                     </Card>
                     <Card variant="outlined" className={styles.registers}>
                         <Typography variant="h6" sx={{marginBottom: "10px"}}>Registers</Typography>

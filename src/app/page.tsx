@@ -1,9 +1,9 @@
-import Emulator from "@/components/emulator/emulator";
+import EmulatorComponent from "@/components/emulator/emulatorComponent";
 
 export default function Home() {
   return (
     <div>
-      <Emulator />
+      <EmulatorComponent />
     </div>
   );
 }

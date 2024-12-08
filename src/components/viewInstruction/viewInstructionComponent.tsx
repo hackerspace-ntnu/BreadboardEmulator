@@ -2,14 +2,14 @@ import {TextField} from "@mui/material";
 import {useEffect, useState} from "react";
 
 import styles from '@/app/ui/viewInstruction.module.css';
-import {instruction} from "@/components/emulator/emulator";
+import {instruction} from "@/components/emulator/emulatorComponent";
 
 interface IViewInstructionProps {
     memoryContent: number,
     immContent: number
 }
 
-export default function ViewInstruction(props: IViewInstructionProps) {
+export default function ViewInstructionComponent(props: IViewInstructionProps) {
     const [decodedInstruction, setDecodedInstruction] = useState("");
 
     useEffect(() => {
