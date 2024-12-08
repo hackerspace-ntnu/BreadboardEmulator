@@ -4,7 +4,7 @@ import {
     AppBar, Breadcrumbs,
     Button,
     Card,
-    FormControlLabel, IconButton,
+    FormControlLabel,
     Link,
     Paper,
     Switch,
